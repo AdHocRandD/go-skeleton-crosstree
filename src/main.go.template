@@ -1,0 +1,49 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/rs/zerolog/log"
+)
+
+// getenv returns the environment variable given by the key if present,
+// otherwise it returns adefault
+func getenv(key string, adefault string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return adefault
+	}
+	return val
+}
+
+func main() {
+	log.Print("starting server")
+
+	host := getenv("HOST", "")
+	port := getenv("PORT", "8000")
+	addr := fmt.Sprintf("%s:%s", host, port)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", HelloServer)
+
+	srv := &http.Server{
+		Addr:              addr,
+		ReadTimeout:       1 * time.Second,
+		WriteTimeout:      1 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		Handler:           http.TimeoutHandler(mux, 2*time.Second, "request timed out"),
+	}
+
+	log.Printf("starting helloserver on %s", addr)
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatal().Err(err).Msg("Error from server")
+	}
+}
+
+func HelloServer(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "static/index.html")
+}
