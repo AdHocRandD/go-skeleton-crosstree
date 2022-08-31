@@ -1,19 +1,41 @@
 # * what's a sane tagging system? What tags can/ought be generally provided?
 # * is it best practice to pin a version for all dependencies?
 
+{{if .UseLocalStack}}
+provider "aws" {
+  access_key                  = "test"
+  secret_key                  = "test"
+  region                      = "us-east-1"
+  s3_force_path_style         = false
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+
+  endpoints {
+    s3 = "http://s3.localhost.localstack.cloud:4566"
+  }
+}
+{{else}}
 provider "aws" {
   region = "{{ .Region }}"
 }
+{{end}}
 
 terraform {
   required_version = ">= 1.0"
 
+  {{if .UseLocalStack}}
   backend "s3" {
     bucket         = "{{ .TerraformBucket }}"
     key            = "terraform.tfstate"
     region         = "{{ .Region }}"
     dynamodb_table = "{{ .TerraformBucket }}-lock"
   }
+  {{else}}
+  backend "local" {
+    path = "./terraform.tfstate"
+  }
+  {{end}}
 
   required_providers {
     aws = {

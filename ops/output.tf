@@ -7,8 +7,9 @@ output "ecr_repository_name" {
 }
 
 resource "aws_ssm_parameter" "ecr_repository_name" {
-  name  = "/terraform/outputs/ecr_repository_name"
-  type  = "String"
-  tier  = "Standard"
-  value = var.ecr_repository_name
+  name      = "/terraform/outputs/ecr_repository_name"
+  type      = "String"
+  tier      = "Standard"
+  value     = var.ecr_repository_name
+  overwrite = true
 }
