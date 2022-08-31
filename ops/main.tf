@@ -25,15 +25,15 @@ terraform {
   required_version = ">= 1.0"
 
   {{if .UseLocalStack}}
+  backend "local" {
+    path = "./terraform.tfstate"
+  }
+  {{else}}
   backend "s3" {
     bucket         = "{{ .TerraformBucket }}"
     key            = "terraform.tfstate"
     region         = "{{ .Region }}"
     dynamodb_table = "{{ .TerraformBucket }}-lock"
-  }
-  {{else}}
-  backend "local" {
-    path = "./terraform.tfstate"
   }
   {{end}}
 
