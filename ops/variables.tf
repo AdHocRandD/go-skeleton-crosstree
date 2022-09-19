@@ -16,7 +16,7 @@ variable "organization" {
 }
 
 variable "repo_name" {
-  description = "The repo namne"
+  description = "The repo name"
   type        = string
   default     = "{{ .RepoName }}"
 }
