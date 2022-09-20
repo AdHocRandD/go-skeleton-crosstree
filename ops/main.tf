@@ -2,7 +2,7 @@
 # * is it best practice to pin a version for all dependencies?
 
 provider "aws" {
-  region = "{{ .Region }}"
+  region = var.region
 }
 
 terraform {
@@ -149,8 +149,10 @@ module "fargate_alb" {
   subnet_ids  = data.aws_subnets.main.ids
 
   tags = {
-    environment = "dev"
-    terraform   = "True"
+    environment          = "dev"
+    terraform            = "True"
+    crosstree-id         = var.project_id
+    crosstree-repository = var.repo_name
   }
 }
 

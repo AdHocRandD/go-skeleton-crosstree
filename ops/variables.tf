@@ -20,3 +20,15 @@ variable "repo_name" {
   type        = string
   default     = "{{ .RepoName }}"
 }
+
+variable "project_id" {
+  description = "the crosstree project id"
+  type        = string
+  default     = "{{ .ProjectID }}"
+}
+
+variable "region" {
+  description = "the AWS region to build the project in"
+  type        = string
+  default     = "{{ .Region }}"
+}
