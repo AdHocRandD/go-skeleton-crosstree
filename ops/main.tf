@@ -151,7 +151,7 @@ module "fargate_alb" {
   tags = {
     environment          = "dev"
     terraform            = "True"
-    crosstree-id         = var.project_id
+    crosstree-id         = var.project_name
     crosstree-repository = var.repo_name
   }
 }

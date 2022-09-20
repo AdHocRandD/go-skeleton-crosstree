@@ -21,10 +21,10 @@ variable "repo_name" {
   default     = "{{ .RepoName }}"
 }
 
-variable "project_id" {
-  description = "the crosstree project id"
+variable "project_name" {
+  description = "the crosstree project name"
   type        = string
-  default     = "{{ .ProjectID }}"
+  default     = "{{ .ProjectName }}"
 }
 
 variable "region" {
