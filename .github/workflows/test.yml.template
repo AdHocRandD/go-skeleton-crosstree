@@ -12,7 +12,7 @@ on:
 # XXX: need to template these
 env:
   AWS_REGION: "{{ .Region }}"
-  AWS_ACCOUNT_ID: "954165079576"
+  AWS_ACCOUNT_ID: "{{ .AmazonAccountID }}"
 
 jobs:
   deploy:
