@@ -20,6 +20,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16.0"
     }
+    awsutils = {
+      source  = "cloudposse/awsutils"
+      version = "~> 0.15.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.1.0, < 4.0.0"
+    }
   }
 }
 
@@ -126,13 +134,13 @@ resource "aws_iam_role_policy_attachment" "github_actions" {
 ####################
 
 data "aws_vpc" "main" {
-  default = true
+  id = aws_vpc.main.id
 }
 
 data "aws_subnets" "main" {
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.main.id]
+    values = concat(values(aws_subnet.public)[*].id, values(aws_subnet.private)[*].id)
   }
 }
 
