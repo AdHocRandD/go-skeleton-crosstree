@@ -65,7 +65,7 @@ resource "aws_ecr_repository" "main" {
 #
 # but then pulling the last cert out of that stream (and that command seems to
 # hang for me) is more painful than I'm willing to do ATM
-resource "aws_iam_openid_connect_provider" "github{{ .ProjectID }}" {
+resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
