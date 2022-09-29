@@ -33,6 +33,12 @@ variable "region" {
   default     = "{{ .Region }}"
 }
 
+variable "vpc_cidr_block" {
+  description = "The CIDR block to use when creating the VPC"
+  type        = string
+  default     = "10.0.2.0/23"
+}
+
 variable "vpc_public_subnet_cidr_blocks" {
   description = "List of public subnet cidrs to use with the VPC, each subnet gets a unique availability zone. Amount of subnets must be under amount of availability zones available in a region."
   type        = list(string)
@@ -63,4 +69,10 @@ variable "tags" {
     repository   = "{{ .RepoName }}"
     project_id   = "{{ .ProjectID }}"
   }
+}
+
+variable "resource_prefix" {
+  description = "The prefix to append to the beginning of each resource name"
+  type        = string
+  default     = "ct-{{ .ProjectName }}"
 }
