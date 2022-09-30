@@ -1,19 +1,15 @@
 # VPC tf file
 # Contains files needed to build out the VPC network
-data "aws_availability_zones" "current" {
+data "aws_availability_zones" "available" {
   state = "available"
 }
 
-resource "random_shuffle" "public_az" {
-  for_each     = toset(var.vpc_public_subnet_cidr_blocks)
-  input        = data.aws_availability_zones.current.names
-  result_count = 1
+locals {
+  aws_availability_zones = slice(sort(data.aws_availability_zones.available.names), 0, min(3, length(data.aws_availability_zones.available.names)))
 }
 
-resource "random_shuffle" "private_az" {
-  for_each     = toset(var.vpc_private_subnet_cidr_blocks)
-  input        = data.aws_availability_zones.current.names
-  result_count = 1
+data "aws_availability_zones" "current" {
+  state = "available"
 }
 
 resource "aws_vpc" "main" {
@@ -25,18 +21,18 @@ resource "aws_vpc" "main" {
 
 resource "aws_subnet" "public" {
   for_each          = toset(var.vpc_public_subnet_cidr_blocks)
-  availability_zone = random_shuffle.public_az[each.key].result[0]
+  availability_zone = local.aws_availability_zones[count.index]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
-  tags              = merge(var.tags, { Name = "${var.resource_prefix}-public-${random_shuffle.public_az[each.key].result[0]}" }, { Layer = "public" })
+  tags              = merge(var.tags, { Name = "${var.resource_prefix}-public-${local.aws_availability_zones[count.index]}" }, { Layer = "public" })
 }
 
 resource "aws_subnet" "private" {
   for_each          = toset(var.vpc_private_subnet_cidr_blocks)
-  availability_zone = random_shuffle.private_az[each.key].result[0]
+  availability_zone = local.aws_availability_zones[count.index]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
-  tags              = merge(var.tags, { Name = "${var.resource_prefix}-private-${random_shuffle.private_az[each.key].result[0]}" }, { Layer = "private" })
+  tags              = merge(var.tags, { Name = "${var.resource_prefix}-private-${local.aws_availability_zones[count.index]}" }, { Layer = "private" })
 }
 
 resource "aws_internet_gateway" "public" {
