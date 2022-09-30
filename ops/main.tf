@@ -211,11 +211,10 @@ module "fargate" {
   source  = "telia-oss/ecs-fargate/aws"
   version = "6.0.0"
 
-  cluster_id = aws_ecs_cluster.cluster.id
-  vpc_id     = data.aws_vpc.main.id
-  # https://github.com/telia-oss/terraform-aws-ecs-fargate/blob/c3ba251c8ab6bb18957b9a34ac7f5ed174170f78/examples/basic/main.tf#L85 has aws_subnet_ids which has been deprecated; if things don't work this might be why?
-  subnet_ids = [for k in aws_subnet.private : k.id]
-  lb_arn     = coalesce(module.fargate_alb.arn, "")
+  cluster_id         = aws_ecs_cluster.cluster.id
+  vpc_id             = data.aws_vpc.main.id
+  private_subnet_ids = [for k in aws_subnet.private : k.id]
+  lb_arn             = coalesce(module.fargate_alb.arn, "")
 
   name_prefix          = var.name_prefix
   task_container_image = "{{ .AmazonAccountID }}.dkr.ecr.{{ .Region }}.amazonaws.com/{{ .RepoName }}:main"
