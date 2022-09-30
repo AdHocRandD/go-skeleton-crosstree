@@ -155,6 +155,10 @@ module "fargate_alb" {
     crosstree-id         = var.project_id
     crosstree-repository = var.repo_name
   }
+
+  depends_on = [
+    "aws_route_table_association.public"
+  ]
 }
 
 resource "aws_lb_listener" "alb" {

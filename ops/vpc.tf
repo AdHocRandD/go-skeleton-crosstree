@@ -4,10 +4,6 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-locals {
-  aws_availability_zones = slice(sort(data.aws_availability_zones.available.names), 0, min(3, length(data.aws_availability_zones.available.names)))
-}
-
 data "aws_availability_zones" "current" {
   state = "available"
 }
@@ -21,18 +17,18 @@ resource "aws_vpc" "main" {
 
 resource "aws_subnet" "public" {
   for_each          = toset(var.vpc_public_subnet_cidr_blocks)
-  availability_zone = local.aws_availability_zones[count.index]
+  availability_zone = data.aws_availability_zones.current.names[index(var.vpc_public_subnet_cidr_blocks, each.value)]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
-  tags              = merge(var.tags, { Name = "${var.resource_prefix}-public-${local.aws_availability_zones[count.index]}" }, { Layer = "public" })
+  tags              = var.tags
 }
 
 resource "aws_subnet" "private" {
   for_each          = toset(var.vpc_private_subnet_cidr_blocks)
-  availability_zone = local.aws_availability_zones[count.index]
+  availability_zone = data.aws_availability_zones.current.names[index(var.vpc_public_subnet_cidr_blocks, each.value)]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
-  tags              = merge(var.tags, { Name = "${var.resource_prefix}-private-${local.aws_availability_zones[count.index]}" }, { Layer = "private" })
+  tags              = var.tags
 }
 
 resource "aws_internet_gateway" "public" {
