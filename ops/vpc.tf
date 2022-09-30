@@ -25,7 +25,7 @@ resource "aws_subnet" "public" {
 
 resource "aws_subnet" "private" {
   for_each          = toset(var.vpc_private_subnet_cidr_blocks)
-  availability_zone = data.aws_availability_zones.current.names[index(var.vpc_public_subnet_cidr_blocks, each.value)]
+  availability_zone = data.aws_availability_zones.current.names[index(var.vpc_private_subnet_cidr_blocks, each.value)]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
   tags              = var.tags
