@@ -157,7 +157,7 @@ module "fargate_alb" {
   }
 
   depends_on = [
-    "aws_route_table_association.public"
+    aws_route_table_association.public
   ]
 }
 
