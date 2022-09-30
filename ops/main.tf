@@ -137,13 +137,6 @@ data "aws_vpc" "main" {
   id = aws_vpc.main.id
 }
 
-data "aws_subnets" "main" {
-  filter {
-    name   = "vpc-id"
-    values = concat(values(aws_subnet.public)[*].id, values(aws_subnet.private)[*].id)
-  }
-}
-
 # https://github.com/telia-oss/terraform-aws-ecs-fargate/blob/c3ba251c8ab6bb18957b9a34ac7f5ed174170f78/examples/basic/main.tf
 module "fargate_alb" {
   source  = "telia-oss/loadbalancer/aws"
@@ -153,7 +146,7 @@ module "fargate_alb" {
   type        = "application"
   internal    = false
   vpc_id      = data.aws_vpc.main.id
-  subnet_ids  = data.aws_subnets.main.ids
+  subnet_ids  = [for k in aws_subnet.public : k.id]
 
   tags = {
     environment          = "dev"
@@ -221,8 +214,8 @@ module "fargate" {
   cluster_id = aws_ecs_cluster.cluster.id
   vpc_id     = data.aws_vpc.main.id
   # https://github.com/telia-oss/terraform-aws-ecs-fargate/blob/c3ba251c8ab6bb18957b9a34ac7f5ed174170f78/examples/basic/main.tf#L85 has aws_subnet_ids which has been deprecated; if things don't work this might be why?
-  private_subnet_ids = data.aws_subnets.main.ids
-  lb_arn             = coalesce(module.fargate_alb.arn, "")
+  subnet_ids = [for k in aws_subnet.private : k.id]
+  lb_arn     = coalesce(module.fargate_alb.arn, "")
 
   name_prefix          = var.name_prefix
   task_container_image = "{{ .AmazonAccountID }}.dkr.ecr.{{ .Region }}.amazonaws.com/{{ .RepoName }}:main"

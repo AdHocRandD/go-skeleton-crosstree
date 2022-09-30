@@ -43,9 +43,9 @@ variable "vpc_public_subnet_cidr_blocks" {
   description = "List of public subnet cidrs to use with the VPC, each subnet gets a unique availability zone. Amount of subnets must be under amount of availability zones available in a region."
   type        = list(string)
   default = [
-    "10.0.5.0/26",
-    "10.0.5.64/26",
-    "10.0.5.128/26"
+    "10.0.2.0/26",
+    "10.0.2.64/26",
+    "10.0.2.128/26"
   ]
 }
 
