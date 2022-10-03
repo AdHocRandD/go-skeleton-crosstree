@@ -55,14 +55,6 @@ resource "aws_route_table_association" "public" {
   subnet_id      = each.value.id
 }
 
-
-# Delete the VPC in the region, it is not used and should not be used
-resource "awsutils_default_vpc_deletion" "default" {
-}
-
-# Logging for VPC flow logs
-
-
 data "aws_iam_policy_document" "vpc_flowlogs_assume_role" {
   statement {
     effect = "Allow"

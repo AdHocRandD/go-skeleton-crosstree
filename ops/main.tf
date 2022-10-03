@@ -20,10 +20,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16.0"
     }
-    awsutils = {
-      source  = "cloudposse/awsutils"
-      version = "~> 0.15.0"
-    }
     random = {
       source  = "hashicorp/random"
       version = ">= 3.1.0, < 4.0.0"
