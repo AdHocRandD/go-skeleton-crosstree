@@ -9,7 +9,7 @@ data "aws_availability_zones" "current" {
 }
 
 resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr_block
+  cidr_block           = var.cidr_block
   tags                 = var.tags
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -85,7 +85,7 @@ data "aws_iam_policy_document" "vpc_flowlogs" {
 }
 
 resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = aws_vpc.main.vpc_id
+  vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${var.region}.s3"
   vpc_endpoint_type = "Gateway"
   subnet_ids = [
@@ -96,7 +96,7 @@ resource "aws_vpc_endpoint" "s3" {
 }
 
 resource "aws_vpc_endpoint" "dkr" {
-  vpc_id              = aws_vpc.main.vpc_id
+  vpc_id              = aws_vpc.main.id
   private_dns_enabled = true
   service_name        = "com.amazonaws.${var.region}.ecr.dkr"
   vpc_endpoint_type   = "Interface"
@@ -109,7 +109,7 @@ resource "aws_vpc_endpoint" "dkr" {
 }
 
 resource "aws_vpc_endpoint" "logs" {
-  vpc_id              = aws_vpc.main.vpc_id
+  vpc_id              = aws_vpc.main.id
   private_dns_enabled = true
   service_name        = "com.amazonaws.${var.region}.logs"
   vpc_endpoint_type   = "Interface"
@@ -122,7 +122,7 @@ resource "aws_vpc_endpoint" "logs" {
 }
 
 resource "aws_vpc_endpoint" "api" {
-  vpc_id              = aws_vpc.main.vpc_id
+  vpc_id              = aws_vpc.main.id
   private_dns_enabled = true
   service_name        = "com.amazonaws.${var.region}.ecr.api"
   vpc_endpoint_type   = "Interface"
@@ -137,7 +137,7 @@ resource "aws_vpc_endpoint" "api" {
 # sg to allow ecs to pull ecr
 resource "aws_security_group" "reporting-sg-ecr" {
   description = "security group allowing access to ecr for md5sum tagging service"
-  vpc_id      = aws_vpc.main.vpc_id
+  vpc_id      = aws_vpc.main.id
   tags        = var.tags
 }
 resource "aws_security_group_rule" "ecr-egress" {
@@ -163,7 +163,7 @@ resource "aws_security_group_rule" "ecr-vpc-ingress" {
   protocol          = "TCP"
   to_port           = 443
   security_group_id = aws_security_group.reporting-sg-ecr.id
-  cidr_blocks       = [aws_vpc.main.vpc_cidr_block]
+  cidr_blocks       = [aws_vpc.main.cidr_block]
   description       = "allow ingress from vpc cidr block"
   type              = "ingress"
 }
@@ -172,7 +172,7 @@ resource "aws_security_group_rule" "ecr-vpc-egress" {
   protocol          = "TCP"
   to_port           = 443
   security_group_id = aws_security_group.reporting-sg-ecr.id
-  cidr_blocks       = [aws_vpc.main.vpc_cidr_block]
+  cidr_blocks       = [aws_vpc.main.cidr_block]
   description       = "allow egress to vpc cidr block"
   type              = "egress"
 }
