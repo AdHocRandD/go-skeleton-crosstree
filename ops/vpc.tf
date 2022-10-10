@@ -9,7 +9,7 @@ data "aws_availability_zones" "current" {
 }
 
 resource "aws_vpc" "main" {
-  cidr_block           = var.cidr_block
+  cidr_block           = var.vpc_cidr_block
   tags                 = var.tags
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -163,7 +163,7 @@ resource "aws_security_group_rule" "ecr-vpc-ingress" {
   protocol          = "TCP"
   to_port           = 443
   security_group_id = aws_security_group.reporting-sg-ecr.id
-  cidr_blocks       = [aws_vpc.main.cidr_block]
+  cidr_blocks       = [var.vpc_cidr_block]
   description       = "allow ingress from vpc cidr block"
   type              = "ingress"
 }
@@ -172,7 +172,7 @@ resource "aws_security_group_rule" "ecr-vpc-egress" {
   protocol          = "TCP"
   to_port           = 443
   security_group_id = aws_security_group.reporting-sg-ecr.id
-  cidr_blocks       = [aws_vpc.main.cidr_block]
+  cidr_blocks       = [var.vpc_cidr_block]
   description       = "allow egress to vpc cidr block"
   type              = "egress"
 }
