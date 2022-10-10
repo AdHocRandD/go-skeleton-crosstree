@@ -88,9 +88,6 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${var.region}.s3"
   vpc_endpoint_type = "Gateway"
-  subnet_ids = [
-    aws_subnet.private
-  ]
 
   tags = var.tags
 }
@@ -101,9 +98,7 @@ resource "aws_vpc_endpoint" "dkr" {
   service_name        = "com.amazonaws.${var.region}.ecr.dkr"
   vpc_endpoint_type   = "Interface"
   security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
-  subnet_ids = [
-    aws_subnet.private
-  ]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
 
   tags = var.tags
 }
@@ -114,9 +109,7 @@ resource "aws_vpc_endpoint" "logs" {
   service_name        = "com.amazonaws.${var.region}.logs"
   vpc_endpoint_type   = "Interface"
   security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
-  subnet_ids = [
-    aws_subnet.private
-  ]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
 
   tags = var.tags
 }
@@ -127,9 +120,7 @@ resource "aws_vpc_endpoint" "api" {
   service_name        = "com.amazonaws.${var.region}.ecr.api"
   vpc_endpoint_type   = "Interface"
   security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
-  subnet_ids = [
-    aws_subnet.private
-  ]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
 
   tags = var.tags
 }
