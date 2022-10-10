@@ -71,7 +71,6 @@ data "aws_iam_policy_document" "vpc_flowlogs_assume_role" {
 # Allow the VPC to create the necessary flow log groups
 #tfsec:ignore:aws-iam-no-policy-wildcards
 data "aws_iam_policy_document" "vpc_flowlogs" {
-  #bridgecrew:skip=CKV_AWS_111: "Ensure IAM policies does not allow write access without constraints"
   statement {
     effect = "Allow"
     actions = [
@@ -83,6 +82,99 @@ data "aws_iam_policy_document" "vpc_flowlogs" {
     ]
     resources = ["*"]
   }
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.vpc_id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  subnet_ids = [
+    aws_subnet.private
+  ]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "dkr" {
+  vpc_id              = aws_vpc.main.vpc_id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids = [
+    aws_subnet.private
+  ]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = aws_vpc.main.vpc_id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.logs"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids = [
+    aws_subnet.private
+  ]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "api" {
+  vpc_id              = aws_vpc.main.vpc_id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids = [
+    aws_subnet.private
+  ]
+
+  tags = var.tags
+}
+
+# sg to allow ecs to pull ecr
+resource "aws_security_group" "reporting-sg-ecr" {
+  description = "security group allowing access to ecr for md5sum tagging service"
+  vpc_id      = aws_vpc.main.vpc_id
+  tags        = var.tags
+}
+resource "aws_security_group_rule" "ecr-egress" {
+  from_port         = 443
+  protocol          = "TCP"
+  to_port           = 443
+  security_group_id = aws_security_group.reporting-sg-ecr.id
+  self              = true
+  description       = "allow egress to ecr"
+  type              = "egress"
+}
+resource "aws_security_group_rule" "ecr-ecs-ingress" {
+  from_port         = 443
+  protocol          = "TCP"
+  to_port           = 443
+  security_group_id = aws_security_group.reporting-sg-ecr.id
+  self              = true
+  description       = "allow ingress from ecr"
+  type              = "ingress"
+}
+resource "aws_security_group_rule" "ecr-vpc-ingress" {
+  from_port         = 443
+  protocol          = "TCP"
+  to_port           = 443
+  security_group_id = aws_security_group.reporting-sg-ecr.id
+  cidr_blocks       = [aws_vpc.main.vpc_cidr_block]
+  description       = "allow ingress from vpc cidr block"
+  type              = "ingress"
+}
+resource "aws_security_group_rule" "ecr-vpc-egress" {
+  from_port         = 443
+  protocol          = "TCP"
+  to_port           = 443
+  security_group_id = aws_security_group.reporting-sg-ecr.id
+  cidr_blocks       = [aws_vpc.main.vpc_cidr_block]
+  description       = "allow egress to vpc cidr block"
+  type              = "egress"
 }
 
 # TODO
