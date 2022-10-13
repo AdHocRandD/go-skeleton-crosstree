@@ -43,37 +43,12 @@ resource "aws_ecr_repository" "main" {
 
 # working from https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-credentials-oidc/
 # and https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
-#
-# to find this thumbprint, I:
-# - went to https://token.actions.githubusercontent.com/.well-known/openid-configuration
-# - got the jwks url of: https://token.actions.githubusercontent.com/.well-known/jwks
-# - ran: openssl s_client -servername token.actions.githubusercontent.com -showcerts -connect token.actions.githubusercontent.com:443
-# - saved the last cert (MIIE6jCCA...E4f97Q=) as /tmp/cert.cert
-# - ran: openssl x509 -in /tmp/cert.cert -fingerprint -noout
-# - which yields a thumbprint of: 6938FD4D98BAB03FAADB97B34396831E3780AEA1
-#
-# I see this fingerprint in other repos in github, so maybe it's right?
-#
-# Here's a script for the first 3 steps:
-#
-# token_host=$(curl -s https://token.actions.githubusercontent.com/.well-known/openid-configuration | jq -r .jwks_uri | awk -F[/:] '{print $4}') && \
-#   openssl s_client -servername "$token_host" -showcerts -connect "$token_host":443
-#
-# but then pulling the last cert out of that stream (and that command seems to
-# hang for me) is more painful than I'm willing to do ATM
-resource "aws_iam_openid_connect_provider" "github-{{ .ProjectID }}" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
-}
-
-# XXX: `terraform plan` always wants to re-create this action
 data "aws_iam_policy_document" "github_actions_assume_role" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github-{{ .ProjectID }}.arn]
+      identifiers = [{{ .OIDCProviderARN }}]
     }
     condition {
       test     = "StringLike"
