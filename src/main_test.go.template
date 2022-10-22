@@ -1,25 +1,40 @@
+// https://gin-gonic.com/docs/testing/
+// https://github.com/stretchr/testify
+
 package main
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestHelloServer(t *testing.T) {
+func TestHelloRoute(t *testing.T) {
+	router := setupRouter()
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/world", nil)
-	HelloServer(w, req)
-	res := w.Result()
-	defer res.Body.Close()
-
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	if string(data) != "hello, world!" {
-		t.Fatalf("%s != hello, world!", data)
-	}
+	req, _ := http.NewRequest("GET", "/hello", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "Hello")
 }
+
+func TestApiPingRoute(t *testing.T) {
+	router := setupRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/ping", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.JSONEq(t, `{"message":"pong"}`, w.Body.String())
+}
+
+func TestRootRoute(t *testing.T) {
+	router := setupRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "Welcome")
+}
+

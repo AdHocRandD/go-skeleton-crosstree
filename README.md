@@ -18,3 +18,6 @@ This is a basic webapp skeleton for [crosstree](https://crosstree.tech).
       | | 
     ==' '==
 ```
+
+Check this [HOWTO](HOWTOgin.md) to learn what it is made of.
+
