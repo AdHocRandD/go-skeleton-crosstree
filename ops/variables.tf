@@ -30,7 +30,7 @@ variable "project_id" {
 variable "region" {
   description = "the AWS region to build the project in"
   type        = string
-  # default     = "{{ .Region }}"
+  default     = "{{ .Region }}"
 }
 
 variable "vpc_cidr_block" {
