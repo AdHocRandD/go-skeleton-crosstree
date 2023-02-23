@@ -57,7 +57,7 @@ module "ecs" {
 module "iam" {
   source             = "./modules/iam"
   role_name          = "github-actions-${var.organization}-${var.repo_name}"
-  OIDCProviderArn    = local.oidc_provider
+  oidc_provider    = local.oidc_provider
   organization       = local.organization
   git_repo_name      = local.git_repo_name
   ecr_repository_url = module.ecr.repository_url
