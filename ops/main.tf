@@ -13,13 +13,13 @@ terraform {
   }
 }
 locals {
-  name_prefix     = "my-app"
+  name_prefix     = var.name_prefix
   app_name        = "${local.name_prefix}-${local.tags.environment}"
   container_image = "{{ .AmazonAccountID }}.dkr.ecr.{{ .Region }}.amazonaws.com/{{ .RepoName }}:main"
-  organization    = "my-org"
-  git_repo_name   = "my-repo"
+  organization    = var.organization
+  git_repo_name   = var.repo_name
   git_role_name   = "github-actions-${local.organization}-${local.git_repo_name}"
-  oidc_provider   = "{{ .OIDCProviderArn }}"
+  oidc_provider   = var.oidc_provider
   tags = {
     environment = "dev"
     terraform   = "True"

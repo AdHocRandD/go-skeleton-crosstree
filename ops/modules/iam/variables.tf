@@ -3,7 +3,7 @@ variable "role_name" {
   description = "The name of the IAM role to create for Github Actions"
 }
 
-variable "OIDCProviderArn" {
+variable "oidc_provider" {
   type        = string
   description = "The ARN of the OIDC provider for Github Actions"
 }

@@ -9,6 +9,11 @@ variable "name_prefix" {
   default = "{{ .ProjectName }}"
 }
 
+variable "oidc_provider" {
+  type    = string
+  default = "{{ .OIDCProviderArn }}"
+}
+
 variable "organization" {
   description = "The organization your github repo is in"
   type        = string

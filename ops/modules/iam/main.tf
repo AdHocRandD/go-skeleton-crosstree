@@ -8,7 +8,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
       type        = "Federated"
-      identifiers = [var.OIDCProviderArn]
+      identifiers = [var.oidc_provider]
     }
     condition {
       test     = "StringLike"
