@@ -199,17 +199,6 @@ resource "aws_vpc_endpoint" "secretsmanager" {
   tags = var.tags
 }
 
-resource "aws_vpc_endpoint" "dynamodb" {
-  vpc_id              = aws_vpc.main.id
-  private_dns_enabled = true
-  service_name        = "com.amazonaws.${var.region}.dynamodb"
-  vpc_endpoint_type   = "Interface"
-  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
-  subnet_ids          = [for k in aws_subnet.private : k.id]
-
-  tags = var.tags
-}
-
 # sg to allow ecs to pull ecr
 resource "aws_security_group" "reporting-sg-ecr" {
   description = "security group allowing access to ecr for md5sum tagging service"
