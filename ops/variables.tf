@@ -30,7 +30,7 @@ variable "project_id" {
 variable "region" {
   description = "the AWS region to build the project in"
   type        = string
-  default     = "{{ .Region }}"
+  # default     = "{{ .Region }}"
 }
 
 variable "vpc_cidr_block" {
@@ -75,4 +75,9 @@ variable "resource_prefix" {
   description = "The prefix to append to the beginning of each resource name"
   type        = string
   default     = "ct-{{ .ProjectName }}"
+}
+
+variable "create_resources" {
+  type    = bool
+  default = true
 }

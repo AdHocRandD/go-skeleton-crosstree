@@ -74,11 +74,16 @@ data "aws_iam_policy_document" "vpc_flowlogs" {
   statement {
     effect = "Allow"
     actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "logs:DescribeLogGroups",
-      "logs:DescribeLogStreams"
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries",
+                "logs:PutLogEvents",
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:DescribeLogGroups"
+
     ]
     resources = ["*"]
   }
@@ -95,7 +100,17 @@ resource "aws_vpc_endpoint" "s3" {
   tags = var.tags
 }
 
-resource "aws_vpc_endpoint" "dkr" {
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id              = aws_vpc.main.id
   private_dns_enabled = true
   service_name        = "com.amazonaws.${var.region}.ecr.dkr"
@@ -105,6 +120,40 @@ resource "aws_vpc_endpoint" "dkr" {
 
   tags = var.tags
 }
+
+resource "aws_vpc_endpoint" "ecs" {
+  vpc_id              = aws_vpc.main.id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.ecs"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "ecs_agent" {
+  vpc_id              = aws_vpc.main.id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.ecs-agent"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "ecs_telemetry" {
+  vpc_id              = aws_vpc.main.id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.ecs-telemetry"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
 
 resource "aws_vpc_endpoint" "logs" {
   vpc_id              = aws_vpc.main.id
@@ -117,10 +166,43 @@ resource "aws_vpc_endpoint" "logs" {
   tags = var.tags
 }
 
-resource "aws_vpc_endpoint" "api" {
+resource "aws_vpc_endpoint" "sqs" {
   vpc_id              = aws_vpc.main.id
   private_dns_enabled = true
-  service_name        = "com.amazonaws.${var.region}.ecr.api"
+  service_name        = "com.amazonaws.${var.region}.sqs"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "sns" {
+  vpc_id              = aws_vpc.main.id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.sns"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id              = aws_vpc.main.id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids          = [for k in aws_subnet.private : k.id]
+
+  tags = var.tags
+}
+
+resource "aws_vpc_endpoint" "dynamodb" {
+  vpc_id              = aws_vpc.main.id
+  private_dns_enabled = true
+  service_name        = "com.amazonaws.${var.region}.dynamodb"
   vpc_endpoint_type   = "Interface"
   security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
   subnet_ids          = [for k in aws_subnet.private : k.id]
@@ -134,6 +216,16 @@ resource "aws_security_group" "reporting-sg-ecr" {
   vpc_id      = aws_vpc.main.id
   tags        = var.tags
 }
+
+resource "aws_security_group_rule" "ecr-ingress" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.reporting-sg-ecr.id
+  cidr_blocks       = ["10.0.0.1/32"]  # allow access from specific IP address
+}
+
 resource "aws_security_group_rule" "ecr-egress" {
   from_port         = 443
   protocol          = "TCP"
@@ -170,28 +262,3 @@ resource "aws_security_group_rule" "ecr-vpc-egress" {
   description       = "allow egress to vpc cidr block"
   type              = "egress"
 }
-
-# TODO
-# resource "aws_cloudwatch_log_group" "vpc_flowlogs" {
-#   name              = "/aws/vpc/${var.resource_prefix}/flow-logs"
-#   retention_in_days = 0
-#   kms_key_id        = aws_kms_key.main.arn
-# }
-# 
-# resource "aws_iam_role" "vpc_flowlogs" {
-#   name               = "${var.resource_prefix}-vpc-flow-logs"
-#   assume_role_policy = data.aws_iam_policy_document.vpc_flowlogs_assume_role.json
-# }
-# 
-# resource "aws_iam_role_policy" "vpc_flowlogs" {
-#   name   = "vpc_flowlogs"
-#   role   = aws_iam_role.vpc_flowlogs.name
-#   policy = data.aws_iam_policy_document.vpc_flowlogs.json
-# }
-# 
-# resource "aws_flow_log" "vpc_flowlogs" {
-#   iam_role_arn    = aws_iam_role.vpc_flowlogs.arn
-#   log_destination = aws_cloudwatch_log_group.vpc_flowlogs.arn
-#   traffic_type    = "ALL"
-#   vpc_id          = aws_vpc.main.id
-# }

@@ -1,6 +1,3 @@
-# * what's a sane tagging system? What tags can/ought be generally provided?
-# * is it best practice to pin a version for all dependencies?
-
 provider "aws" {
   region = var.region
 }
@@ -14,210 +11,81 @@ terraform {
     region         = "{{ .Region }}"
     dynamodb_table = "{{ .TerraformBucket }}-lock"
   }
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.16.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = ">= 3.1.0, < 4.0.0"
-    }
-  }
 }
-
-# XXX: do we want a repository policy?
-# https://github.com/Vlaaaaaaad/blog-scaling-containers-in-aws/blob/5fcf9645d9ce27ed2ac529b0dec020460d1832f3/ecr/ecr-repos.tf#L24
-resource "aws_ecr_repository" "main" {
-  name = var.ecr_repository_name
-  tags = {}
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
-
-#######################
-# github ECR OICD setup
-
-# working from https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-credentials-oidc/
-# and https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
-data "aws_iam_policy_document" "github_actions_assume_role" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    principals {
-      type        = "Federated"
-      identifiers = [{{ .OIDCProviderArn }}]
-    }
-    condition {
-      test     = "StringLike"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.organization}/${var.repo_name}:*"]
-    }
-  }
-}
-
-resource "aws_iam_role" "github_actions" {
-  name               = "github-actions-${var.organization}-${var.repo_name}"
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
-}
-
-data "aws_iam_policy_document" "github_actions" {
-  statement {
-    actions = [
-      "ecr:GetAuthorizationToken",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:GetRepositoryPolicy",
-      "ecr:DescribeRepositories",
-      "ecr:ListImages",
-      "ecr:DescribeImages",
-      "ecr:BatchGetImage",
-      "ecr:InitiateLayerUpload",
-      "ecr:UploadLayerPart",
-      "ecr:CompleteLayerUpload",
-      "ecr:PutImage"
-    ]
-    resources = [aws_ecr_repository.main.arn]
-  }
-
-  statement {
-    actions = [
-      "ecr:GetAuthorizationToken",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_policy" "github_actions" {
-  name        = "github-actions-${var.repo_name}"
-  description = "Grant Github Actions the ability to push to ${var.repo_name} from ${var.organization}/${var.repo_name}"
-  policy      = data.aws_iam_policy_document.github_actions.json
-}
-
-resource "aws_iam_role_policy_attachment" "github_actions" {
-  role       = aws_iam_role.github_actions.name
-  policy_arn = aws_iam_policy.github_actions.arn
-}
-
-# End Github OICD
-####################
-
-data "aws_vpc" "main" {
-  id = aws_vpc.main.id
-}
-
-# https://github.com/telia-oss/terraform-aws-ecs-fargate/blob/c3ba251c8ab6bb18957b9a34ac7f5ed174170f78/examples/basic/main.tf
-module "fargate_alb" {
-  source  = "telia-oss/loadbalancer/aws"
-  version = "3.0.0"
-
-  name_prefix = var.name_prefix
-  type        = "application"
-  internal    = false
-  vpc_id      = data.aws_vpc.main.id
-  subnet_ids  = [for k in aws_subnet.public : k.id]
-
+locals {
+  name_prefix     = "my-app"
+  app_name        = "${local.name_prefix}-${local.tags.environment}"
+  container_image = "{{ .AmazonAccountID }}.dkr.ecr.{{ .Region }}.amazonaws.com/{{ .RepoName }}:main"
+  organization    = "my-org"
+  git_repo_name   = "my-repo"
+  git_role_name   = "github-actions-${local.organization}-${local.git_repo_name}"
+  oidc_provider   = "{{ .OIDCProviderArn }}"
   tags = {
-    environment          = "dev"
-    terraform            = "True"
-    Provisioned-by       = "crosstree"
-    crosstree-id         = var.project_id
-    crosstree-repository = var.repo_name
-  }
-
-  depends_on = [
-    aws_route_table_association.public
-  ]
-}
-
-resource "aws_lb_listener" "alb" {
-  load_balancer_arn = module.fargate_alb.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    target_group_arn = module.fargate.target_group_arn
-    type             = "forward"
+    environment = "dev"
+    terraform   = "True"
   }
 }
 
-resource "aws_security_group_rule" "task_ingress_8000" {
-  security_group_id        = module.fargate.service_sg_id
-  type                     = "ingress"
-  protocol                 = "tcp"
-  from_port                = 8000
-  to_port                  = 8000
-  source_security_group_id = module.fargate_alb.security_group_id
+# resource "null_resource" "create_iam_and_fargate" {
+#   count = can(module.ecr) && can(module.ecs) ? 1 : 0
+#   provisioner "local-exec" {
+#     command = "echo Create IAM and Fargate resources"
+#   }
+# }
+
+module "vpc" {
+  source         = "./modules/vpc"
+  vpc_cidr_block = var.vpc_cidr_block
+  region         = var.region
+  tags           = local.tags
 }
 
-resource "aws_security_group_rule" "alb_ingress_80" {
-  security_group_id = module.fargate_alb.security_group_id
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = 80
-  to_port           = 80
-  cidr_blocks       = ["0.0.0.0/0"]
-  ipv6_cidr_blocks  = ["::/0"]
+module "ecr" {
+  source          = "./modules/ecr"
+  repository_name = local.name_prefix
+  tags            = local.tags
+  region          = var.region
+
 }
-
-resource "aws_ecs_cluster" "cluster" {
-  name = "${var.name_prefix}-cluster"
-
-  # do we want spot instances? What are the benefits/disadvantages?
-  # capacity_providers = [
-  #   "FARGATE_SPOT",
-  # ]
-
-  # default_capacity_provider_strategy {
-  #   capacity_provider = "FARGATE_SPOT"
-  #   weight            = 1
-  #   base              = 3500
-  # }
-
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
+module "ecs" {
+  source       = "./modules/ecs"
+  cluster_name = "${local.name_prefix}-cluster"
+  tags         = local.tags
+  depends_on   = [module.vpc]
   }
+
+module "iam" {
+  source             = "./modules/iam"
+  role_name          = "github-actions-${var.organization}-${var.repo_name}"
+  OIDCProviderArn    = local.oidc_provider
+  organization       = local.organization
+  git_repo_name      = local.git_repo_name
+  ecr_repository_url = module.ecr.repository_url
+  ecr_repository_arn = module.ecr.repository_arn
+  policy_name        = "github-actions-${local.git_repo_name}"
+  depends_on   = [module.ecr, module.ecs, module.vpc]
+  # depends_on         = [null_resource.create_iam_and_fargate]
+
 }
 
 module "fargate" {
-  source  = "telia-oss/ecs-fargate/aws"
-  version = "6.0.0"
-
-  cluster_id         = aws_ecs_cluster.cluster.id
-  vpc_id             = data.aws_vpc.main.id
-  private_subnet_ids = [for k in aws_subnet.private : k.id]
-  lb_arn             = coalesce(module.fargate_alb.arn, "")
-
-  name_prefix          = var.name_prefix
-  task_container_image = "{{ .AmazonAccountID }}.dkr.ecr.{{ .Region }}.amazonaws.com/{{ .RepoName }}:main"
-
-  # public ip is needed for default vpc, default is false
+  source                          = "./modules/fargate"
+  name_prefix                     = var.name_prefix
+  app_name                        = local.app_name
+  ecr_repository_url              = module.ecr.repository_url
+  cluster_id                      = module.ecs.cluster_id
+  vpc_id                          = module.vpc.vpc_id
+  private_subnet_ids              = module.vpc.private_subnet_ids
+  task_container_image            = local.container_image
   task_container_assign_public_ip = true
-
-  # port, default protocol is HTTP
-  task_container_port = 8000
-
-  task_container_port_mappings = [
-    {
-      containerPort = 9000
-      hostPort      = 9000
-      protocol      = "tcp"
-    }
-  ]
-
+  task_container_port             = 8000
   task_container_environment = {
     TEST_VARIABLE = "TEST_VALUE"
   }
-
   health_check = {
     port = "traffic-port"
     path = "/"
   }
-
-  depends_on = [
-    module.fargate_alb,
-  ]
+  tags       = local.tags
+  depends_on = [module.ecs, module.iam, module.vpc, module.ecr]
 }
