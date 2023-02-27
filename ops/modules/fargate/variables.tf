@@ -8,6 +8,11 @@ variable "cluster_id" {
   description = "The ID of the ECS cluster to deploy the service to"
 }
 
+variable "cluster_name" {
+  type        = string
+  description = "The ID of the ECS cluster to deploy the service to"
+}
+
 variable "ecr_repository_url" {
   type        = string
   description = "The URL of the ECR repository containing the Docker image"

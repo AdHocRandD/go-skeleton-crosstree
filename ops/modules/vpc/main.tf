@@ -20,7 +20,12 @@ resource "aws_subnet" "public" {
   availability_zone = data.aws_availability_zones.current.names[index(var.vpc_public_subnet_cidr_blocks, each.value)]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
-  tags              = var.tags
+  tags = merge(
+    var.tags,
+    {
+      subnet_type = "public"
+    }
+  )
 }
 
 resource "aws_subnet" "private" {
@@ -28,7 +33,12 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.current.names[index(var.vpc_private_subnet_cidr_blocks, each.value)]
   vpc_id            = aws_vpc.main.id
   cidr_block        = each.value
-  tags              = var.tags
+  tags = merge(
+    var.tags,
+    {
+      subnet_type = "private"
+    }
+  )
 }
 
 resource "aws_internet_gateway" "public" {
@@ -74,15 +84,15 @@ data "aws_iam_policy_document" "vpc_flowlogs" {
   statement {
     effect = "Allow"
     actions = [
-                "logs:CreateLogDelivery",
-                "logs:GetLogDelivery",
-                "logs:UpdateLogDelivery",
-                "logs:DeleteLogDelivery",
-                "logs:ListLogDeliveries",
-                "logs:PutLogEvents",
-                "logs:PutResourcePolicy",
-                "logs:DescribeResourcePolicies",
-                "logs:DescribeLogGroups"
+      "logs:CreateLogDelivery",
+      "logs:GetLogDelivery",
+      "logs:UpdateLogDelivery",
+      "logs:DeleteLogDelivery",
+      "logs:ListLogDeliveries",
+      "logs:PutLogEvents",
+      "logs:PutResourcePolicy",
+      "logs:DescribeResourcePolicies",
+      "logs:DescribeLogGroups"
 
     ]
     resources = ["*"]
@@ -101,11 +111,11 @@ resource "aws_vpc_endpoint" "s3" {
 }
 
 resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id            = aws_vpc.main.id
-  service_name      = "com.amazonaws.${var.region}.ecr.api"
-  vpc_endpoint_type = "Interface"
-  security_group_ids  = [aws_security_group.reporting-sg-ecr.id]
-  subnet_ids          = [for k in aws_subnet.private : k.id]
+  vpc_id             = aws_vpc.main.id
+  service_name       = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type  = "Interface"
+  security_group_ids = [aws_security_group.reporting-sg-ecr.id]
+  subnet_ids         = [for k in aws_subnet.private : k.id]
 
   tags = var.tags
 }
@@ -212,7 +222,7 @@ resource "aws_security_group_rule" "ecr-ingress" {
   to_port           = 443
   protocol          = "tcp"
   security_group_id = aws_security_group.reporting-sg-ecr.id
-  cidr_blocks       = ["10.0.0.1/32"]  # allow access from specific IP address
+  cidr_blocks       = ["10.0.0.1/32"] # allow access from specific IP address
 }
 
 resource "aws_security_group_rule" "ecr-egress" {

@@ -3,6 +3,9 @@ data "aws_subnets" "main" {
     name   = "vpc-id"
     values = [var.vpc_id]
   }
+  tags = {
+    subnet_type = "public"
+  }
 }
 
 module "fargate_alb" {
@@ -48,10 +51,6 @@ resource "aws_security_group_rule" "alb_ingress_80" {
   ipv6_cidr_blocks  = ["::/0"]
 }
 
-resource "aws_ecs_cluster" "cluster" {
-  name = "${var.name_prefix}-cluster"
-}
-
 # resource "aws_secretsmanager_secret" "task_container_secrets" {
 #   name       = var.name_prefix
 #   kms_key_id = var.task_container_secrets_kms_key
@@ -78,7 +77,7 @@ module "fargate" {
   vpc_id               = var.vpc_id
   private_subnet_ids   = var.private_subnet_ids
   lb_arn               = module.fargate_alb.arn
-  cluster_id           = aws_ecs_cluster.cluster.id
+  cluster_id           = var.cluster_id
   task_container_image = var.task_container_image
 
   // public ip is needed for default vpc, default is false

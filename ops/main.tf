@@ -52,18 +52,18 @@ module "ecs" {
   cluster_name = "${local.name_prefix}-cluster"
   tags         = local.tags
   depends_on   = [module.vpc]
-  }
+}
 
 module "iam" {
   source             = "./modules/iam"
   role_name          = "github-actions-${var.organization}-${var.repo_name}"
-  oidc_provider    = local.oidc_provider
+  oidc_provider      = local.oidc_provider
   organization       = local.organization
   git_repo_name      = local.git_repo_name
   ecr_repository_url = module.ecr.repository_url
   ecr_repository_arn = module.ecr.repository_arn
   policy_name        = "github-actions-${local.git_repo_name}"
-  depends_on   = [module.ecr, module.ecs, module.vpc]
+  depends_on         = [module.ecr, module.ecs, module.vpc]
   # depends_on         = [null_resource.create_iam_and_fargate]
 
 }
@@ -74,6 +74,7 @@ module "fargate" {
   app_name                        = local.app_name
   ecr_repository_url              = module.ecr.repository_url
   cluster_id                      = module.ecs.cluster_id
+  cluster_name                    = module.ecs.cluster_name
   vpc_id                          = module.vpc.vpc_id
   private_subnet_ids              = module.vpc.private_subnet_ids
   task_container_image            = local.container_image
