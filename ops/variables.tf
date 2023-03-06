@@ -9,6 +9,11 @@ variable "name_prefix" {
   default = "{{ .ProjectName }}"
 }
 
+variable "oidc_provider" {
+  type    = string
+  default = "{{ .OIDCProviderArn }}"
+}
+
 variable "organization" {
   description = "The organization your github repo is in"
   type        = string
@@ -75,4 +80,9 @@ variable "resource_prefix" {
   description = "The prefix to append to the beginning of each resource name"
   type        = string
   default     = "ct-{{ .ProjectName }}"
+}
+
+variable "create_resources" {
+  type    = bool
+  default = true
 }

@@ -1,1 +1,8 @@
 .envrc
+.vscode/settings.json
+.gitignore
+ops/.terraform.lock.hcl
+ops/modules/vpc/dynamic_cidr.tf.bak
+ops/modules/alb/main.tf
+ops/modules/alb/outputs.tf
+ops/modules/alb/variables.tf

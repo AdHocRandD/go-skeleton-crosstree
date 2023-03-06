@@ -23,3 +23,5 @@ override.tf.json
 # All others
 .terragrunt-cache
 tfsec.out
+.vscode/settings.json
+.gitignore
